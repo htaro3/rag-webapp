@@ -49,7 +49,7 @@ uvicorn app.main:app --reload
 プロジェクトの構造：
 ```
 rag-webapp/
-├── backend/
+├── app/
 │   ├── api/
 │   ├── core/
 │   ├── models/
@@ -57,9 +57,11 @@ rag-webapp/
 │   └── main.py
 ├── frontend/
 │   ├── src/
+│   └── package.json
 ├── shared_data/
-│   ├── .txt
 │   └── chroma_db/
+├── uploads/
+│   └── *.txt               # ユーザーがアップロードした文書（.txt等）
 ├── .env
 ├── .gitignore
 └── requirements.txt

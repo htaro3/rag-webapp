@@ -1,0 +1,16 @@
+# .gitignore
+
+# Python関連
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# ChromaベクトルDB
+shared_data/chroma_db/
+
+# Node/React関連
+node_modules/
+build/
+dist/
+.env.local

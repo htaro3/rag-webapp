@@ -7,10 +7,10 @@
 """
 
 import google.generativeai as genai
-from core.config import GEMINI_API_KEY
+from core.config import LLM_API_KEY, LLM_EMBED_MODEL
 from core.chromadb_client import collection
 
-# 初期化
+# APIキーの設定
 genai.configure(api_key=GEMINI_API_KEY)
 
 # ユーザの質問をベクトル検索し、関連文書を返す
@@ -18,7 +18,7 @@ def search_related_docs(query: str, top_k: int = 3) -> list[str]:
 
     # 質問をベクトル化
     embeding = genai.embed_context(
-        model = "models/text-embedding-004",
+          model=LLM_EMBED_MODEL,
         context = query,                        # ベクトル化する文章
         task_type = "retrieval_query"           # ベクトル化のタスク
     )["embedding"]
@@ -30,11 +30,11 @@ def search_related_docs(query: str, top_k: int = 3) -> list[str]:
         include = ["documents", "metadatas"]    # 文章本体とメタ情報を返す
     )
 
-    # 検索結果が無ければ空リストを返す
+    # 関連文書が無ければ空リストを返す
     if not results["metadatas"] or not results["metadatas"][0]:
         return []
 
-    # メタ情報からどの文章IDに属していたかを取り出す
+    # 検出されたメタ情報から、関連文書IDを取り出す（重複排除）
     doc_ids = {meta["document_id"] for meta in results["metadatas"][0]}
 
     # 文書IDごとに全文チャンクを取得

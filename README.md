@@ -36,7 +36,10 @@ pip install -r requirements.txt
 4. 環境変数の設定
 ```bash
 cp .env.example .env
-# .envファイルを編集して必要な環境変数を設定
+# .envファイルを開いて、以下の項目を設定してください：
+# - LLM_API_KEY（Google Gemini APIキーなど）
+# - LLM_EMBED_MODEL（ベクトル化モデル名）
+# - LLM_GEN_MODEL（生成モデル名）
 ```
 
 5. アプリケーションの起動

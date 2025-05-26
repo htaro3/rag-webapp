@@ -66,6 +66,7 @@ rag-webapp/
 ├── uploads/
 │   └── *.txt               # ユーザーがアップロードした文書（.txt等）
 ├── .env
+├── .env.example
 ├── .gitignore
 └── requirements.txt
 ``` 

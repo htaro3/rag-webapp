@@ -14,10 +14,10 @@ from chromadb.config import Settings
 from core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME
 
 # chromadbの初期化
-lient = chromadb.PersistentClient(
+client = chromadb.PersistentClient(
     path=VECTOR_DB_DIR,  # ベクトルDBの保存先（.envで設定）
     settings=Settings(anonymized_telemetry=False)  # 使用状況の送信を無効化
 )
 
 # rag_docsを取得、無ければ自動作成
-collction = client.get_or_crate_collection(VECTOR_COLLECTION_NAME)
+collection = client.get_or_create_collection(VECTOR_COLLECTION_NAME)

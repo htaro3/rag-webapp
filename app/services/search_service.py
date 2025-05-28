@@ -2,7 +2,7 @@
 【search_service.py の役割】
 -----------------------------------------------------
 - このファイルは、ユーザーの質問をベクトル化し、
-  ベクトルDB（chromadb）から“意味が近い文書”を検索して返す処理を行う。
+  ベクトルDB（chromadb）から"意味が近い文書"を検索して返す処理を行う。
 - 後続の回答生成（generate_service.py）に渡す「関連文書リスト」を作成する。
 """
 
@@ -11,7 +11,7 @@ from core.config import LLM_API_KEY, LLM_EMBED_MODEL
 from core.chromadb_client import collection
 
 # APIキーの設定
-genai.configure(api_key=GEMINI_API_KEY)
+genai.configure(api_key=LLM_API_KEY)
 
 # ユーザの質問をベクトル検索し、関連文書を返す
 def search_related_docs(query: str, top_k: int = 3) -> list[str]:

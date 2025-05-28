@@ -10,6 +10,7 @@
 from fastapi import FastAPI
 # api/ask.py で定義したルーター（/askエンドポイント）を読み込む
 from api.ask import router as ask_router
+from api.upload import router as upload_router
 
 # FastAPIアプリケーションのインスタンスを作成
 app = FastAPI(
@@ -18,5 +19,6 @@ app = FastAPI(
     version="1.0.0"                                 # バージョン表記
 )
 
-# APIルーターをアプリに組み込み（prefixなし → /ask）
+# /ask を有効にする
 app.include_router(ask_router)
+app.include_router(upload_router)

@@ -11,7 +11,7 @@ from fastapi import APIRouter
 # 入出力データ型（schema）を読み込み
 from models.schema import QuestionInput, AnswerResponse
 # ベクトル検索サービスをインポート（関連文書を探す）
-from services.search_service import search_documents
+from services.search_service import search_related_docs
 # 生成サービスをインポート（回答を生成する）
 from services.generate_service import generate_answer
 
@@ -22,7 +22,7 @@ router = APIRouter()
 @router.post("/ask", response_model=AnswerResponse)
 def ask_question(input: QuestionInput):
     # ベクトル検索：関連文書を取得
-    related_docs = search_documents(input.question)
+    related_docs = search_related_docs(input.question)
 
     # Geminiで回答を生成
     answer = generate_answer(related_docs, input.question)

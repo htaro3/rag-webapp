@@ -6,10 +6,10 @@
 """
 
 import google.generativeai as genai
-from core.config import GEMINI_API_KEY, LLM_GEN_MODEL
+from core.config import LLM_API_KEY, LLM_GEN_MODEL
 
 # APIキーの設定
-genai.configure(api_key = GEMINI_API_KEY)
+genai.configure(api_key=LLM_API_KEY)
 
 # 関連文章と質問を渡して、自然文で回答を作る
 def generate_answer(context_docs: list[str], question: str) -> str:

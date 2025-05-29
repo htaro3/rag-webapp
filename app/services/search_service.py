@@ -17,9 +17,9 @@ genai.configure(api_key=LLM_API_KEY)
 def search_related_docs(query: str, top_k: int = 3) -> list[str]:
 
     # 質問をベクトル化
-    embeding = genai.embed_context(
-          model=LLM_EMBED_MODEL,
-        context = query,                        # ベクトル化する文章
+    embeding = genai.embed_content(
+        model=LLM_EMBED_MODEL,
+        content = query,                        # ベクトル化する文章
         task_type = "retrieval_query"           # ベクトル化のタスク
     )["embedding"]
 

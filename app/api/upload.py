@@ -7,12 +7,9 @@
 
 import os
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME
+from core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME, LLM_API_KEY, LLM_EMBED_MODEL
 from core.chromadb_client import collection
 import google.generativeai as genai
-from core.config import LLM_API_KEY, LLM_EMBED_MODEL
-
-
 
 # 初期化
 genai.configure(api_key=LLM_API_KEY)

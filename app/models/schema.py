@@ -14,4 +14,4 @@ class QuestionInput(BaseModel):
 
 # 返答形式定義
 class AnswerResponse(BaseModel):
-    sanswer: str
+    answer: str

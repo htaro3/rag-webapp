@@ -11,7 +11,7 @@
 
 import chromadb
 from chromadb.config import Settings
-from core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME
+from app.core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME
 
 # chromadbの初期化
 client = chromadb.PersistentClient(
@@ -19,5 +19,9 @@ client = chromadb.PersistentClient(
     settings=Settings(anonymized_telemetry=False)  # 使用状況の送信を無効化
 )
 
+def get_collection():
+    """rag_docsコレクションを取得、無ければ自動作成"""
+    return client.get_or_create_collection(VECTOR_COLLECTION_NAME)
+
 # rag_docsを取得、無ければ自動作成
-collection = client.get_or_create_collection(VECTOR_COLLECTION_NAME)
+collection = get_collection()

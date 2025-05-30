@@ -1,67 +1,130 @@
 """
 【upload.py の役割】
 -----------------------------------------------------
-- ユーザーがアップロードした.txtファイルを受け取り、
-  保存 → チャンク分割 → ベクトル化 → ベクトルDB登録 を行う。
+- ファイルアップロードを処理するエンドポイント
+- アップロードされたファイルを保存し、ベクトルDBに登録
 """
 
 import os
+import shutil
+from typing import List
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from core.config import VECTOR_DB_DIR, VECTOR_COLLECTION_NAME, LLM_API_KEY, LLM_EMBED_MODEL
-from core.chromadb_client import collection
-import google.generativeai as genai
+from fastapi.responses import JSONResponse, PlainTextResponse
+from pathlib import Path
 
-# 初期化
-genai.configure(api_key=LLM_API_KEY)
+from app.models.schema import DeleteFilesRequest, FileListResponse, FileInfoResponse
+from app.services.embed_service import embed_content
+
 router = APIRouter()
 
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-# チャンク分割関数
-def split_into_chunks(text: str, max_len=400, overlap=50) -> list[str]:
-    sentences = text.split("。")
-    chunks, current = [], ""
-    for sentence in sentences:
-        if len(current) + len(sentence) <= max_len:
-            current += sentence + "。"
-        else:
-            chunks.append(current.strip())
-            current = current[-overlap:] + sentence + "。"
-    if current:
-        chunks.append(current.strip())
-    return chunks
+# アップロードされたファイルを保存するディレクトリ
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
 @router.post("/upload")
-async def upload_text_file(file: UploadFile = File(...)):
-    if not file.filename.endswith(".txt"):
-        raise HTTPException(status_code=400, detail="テキストファイル(.txt)のみ対応しています。")
-
-    # 保存
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    with open(file_path, "wb") as f:
-        f.write(await file.read())
-
-    # ファイル読み込み
-    with open(file_path, "r", encoding="utf-8") as f:
-        raw_text = f.read()
-
-    # 文書IDはファイル名ベースで定義
-    document_id = os.path.splitext(file.filename)[0]
-    chunks = split_into_chunks(raw_text)
-
-    # 各チャンクをベクトル化して登録
-    for idx, chunk in enumerate(chunks):
-        result = genai.embed_content(
-            model=LLM_EMBED_MODEL,
-            content=chunk,
-            task_type="retrieval_document"
+async def upload_file(file: UploadFile = File(...)):
+    """
+    テキストファイルをアップロードしてベクトルDBに保存
+    """
+    # .txtファイルのみ受け付ける
+    if not file.filename.endswith('.txt'):
+        raise HTTPException(
+            status_code=400, 
+            detail="テキストファイル(.txt)のみアップロード可能です"
         )
-        collection.add(
-            documents=[chunk],
-            ids=[f"{document_id}_chunk_{idx}"],
-            metadatas=[{"document_id": document_id}],
-            embeddings=[result["embedding"]]
-        )
+    
+    # ファイルパスを作成
+    file_path = UPLOAD_DIR / file.filename
+    
+    # 既に同名のファイルが存在する場合は上書き
+    if file_path.exists():
+        file_path.unlink()
+    
+    # ファイルを保存
+    with file_path.open("wb") as f:
+        shutil.copyfileobj(file.file, f)
+    
+    # ファイルの内容を読み込む
+    content = file_path.read_text(encoding="utf-8")
+    
+    # ベクトルDBに保存
+    embed_content(content, file.filename)
+    
+    return {"message": f"ファイル '{file.filename}' がアップロードされ、ベクトルDBに登録されました"}
 
-    return {"message": f"{file.filename} をアップロード・登録しました。チャンク数: {len(chunks)}"}
+@router.get("/files", response_model=FileListResponse)
+async def list_files():
+    """
+    アップロードされたファイル一覧を取得
+    """
+    files = []
+    for file_path in UPLOAD_DIR.glob("*.txt"):
+        size = file_path.stat().st_size
+        modified = file_path.stat().st_mtime
+        files.append({
+            "filename": file_path.name,
+            "size": size,
+            "modified": modified
+        })
+    
+    # 更新日時の新しい順にソート
+    files.sort(key=lambda x: x["modified"], reverse=True)
+    
+    return {"files": files}
+
+@router.get("/files/{filename}", response_class=PlainTextResponse)
+async def get_file_content(filename: str):
+    """
+    指定されたファイルの内容を取得
+    """
+    file_path = UPLOAD_DIR / filename
+    
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"ファイル '{filename}' が見つかりません"
+        )
+    
+    # ファイル内容を読み込んで返す
+    content = file_path.read_text(encoding="utf-8")
+    return content
+
+@router.delete("/files", response_model=FileInfoResponse)
+async def delete_files(request: DeleteFilesRequest):
+    """
+    指定されたファイルを削除し、ベクトルDBからも削除
+    """
+    if not request.filenames:
+        raise HTTPException(
+            status_code=400,
+            detail="削除するファイル名が指定されていません"
+        )
+    
+    deleted_files = []
+    failed_files = []
+    
+    for filename in request.filenames:
+        file_path = UPLOAD_DIR / filename
+        
+        if not file_path.exists():
+            failed_files.append(filename)
+            continue
+        
+        try:
+            # ファイルを削除
+            file_path.unlink()
+            
+            # ベクトルDBからも削除（これはサービス層で実装する必要があります）
+            from app.services.embed_service import delete_from_vectordb
+            delete_from_vectordb(filename)
+            
+            deleted_files.append(filename)
+        except Exception as e:
+            print(f"Error deleting {filename}: {e}")
+            failed_files.append(filename)
+    
+    return {
+        "message": f"{len(deleted_files)}個のファイルが削除されました",
+        "deleted_files": deleted_files,
+        "failed_files": failed_files
+    }

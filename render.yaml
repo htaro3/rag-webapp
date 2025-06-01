@@ -1,0 +1,41 @@
+services:
+  # Backend API Service
+  - type: web
+    name: rag-webapp-api
+    env: python
+    region: oregon  # You can change this to your preferred region
+    buildCommand: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: uvicorn run:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: OPENAI_API_KEY
+        sync: false  # This will be set manually in Render dashboard
+      - key: PINECONE_API_KEY
+        sync: false  # This will be set manually in Render dashboard
+      - key: PINECONE_ENVIRONMENT
+        sync: false  # This will be set manually in Render dashboard
+      - key: PINECONE_INDEX_NAME
+        sync: false  # This will be set manually in Render dashboard
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Frontend Static Site
+  - type: web
+    name: rag-webapp-frontend
+    env: static
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://rag-webapp-api.onrender.com  # This will be your backend URL
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true 
